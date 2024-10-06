@@ -1,5 +1,3 @@
-pub type RoomId = u16;
-
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub enum MessageType {
     // Client indicates their ready status

@@ -1,7 +1,7 @@
-use std::{borrow::BorrowMut, collections::HashMap, fs::File, io::{self, BufRead, Read}, thread};
+use std::{borrow::BorrowMut, collections::HashMap, fs::File, io::{self, Read}, thread};
 
 use messaging::MessageType;
-use rouille::{input::json, router, try_or_400, websocket, Request, RequestBody, Response, ResponseBody};
+use rouille::{router, try_or_400, websocket, Response};
 
 mod cards;
 mod game;
@@ -13,13 +13,13 @@ const SERVER_PORT: u16 = 8080;
 
 fn main() {
     // A room is an instance of a game -- Players can join and leave rooms.
-    let rooms: HashMap<u16, ()> = HashMap::new();
-    let clients: Vec<String> = vec![];
+    let _rooms: HashMap<u16, ()> = HashMap::new();
+    let _clients: Vec<String> = vec![];
 
     let server_addr = format!("{}:{}", SERVER_HOSTNAME, SERVER_PORT);
     println!("Listening on {server_addr}");
 
-    let client_html_f = File::open("src/client.html").expect("Couldn't find client HTML");
+    let client_html_f = File::open("src/bin-form.html").expect("Couldn't find client HTML");
     let client_html: String = {
         let mut buf = String::new();
         

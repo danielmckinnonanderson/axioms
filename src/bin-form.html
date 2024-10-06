@@ -1,0 +1,91 @@
+<div id="binary-message">
+  <section>
+    <h1>Send a binary message</h1>
+
+    <form
+      id="message-form"
+      onsubmit="onSubmit()"
+    >
+      <select
+        name="message-type-select"
+        id="message-type-select"
+        onchange="onMsgTypeChange(event)"
+      >
+        <option value="client_ready">Client Ready</option>
+        <option value="game_init">Game Init</option>
+        <option value="round_init">Round Init</option>
+        <option value="player_turn_start">Player Turn Start</option>
+        <option value="selection_made">Selection Made</option>
+        <option value="evaluate_selections">Evaluate Selections</option>
+      </select>
+
+      <div id="message-payload">
+      </div>
+
+      <button
+        id="message-submit"
+      >
+        Send
+      </button>
+    </form>
+  </section>
+
+  <code id="server-response">
+
+  </code>
+
+  <script>
+    const socket = new WebSocket("ws://localhost:8080/ws");
+    socket.binaryType = "arraybuffer";
+
+    socket.onmessage = function(event) {{
+      // FIXME
+      document.getElementById("server-response").innerHTML = event.data + "<br />";
+    }}
+
+    function onSubmit() {
+      const form = document.getElementById("message-form");
+      const values = Array.from(new FormData(form).entries());
+      const data = {
+        msgType: values[0][1],
+        payload: undefined
+      };
+
+      const msg = serialize(data.msgType, data.payload);
+      socket.send(msg);
+    }
+
+    function serialize(msgType, payload) {
+      switch (msgType) {
+        case "client_ready": {
+          const ready = (!!payload) ? 0x01 : 0x00;
+          const arr = new Uint8Array([0x00, ready]);
+          console.info(arr);
+          return arr;
+        }
+        default: {
+          console.warn("Unhandled message type for serialization", msgType);
+        }
+      }
+    }
+
+    function onMsgTypeChange(event) {
+      const opts      = Array.from(event.srcElement.children);
+      const selection = opts.find(opt => opt.selected);
+      const payloadEl = document.getElementById("message-payload");
+
+      switch(selection.value) {
+        case "client_ready": {
+          console.info("Switched to client ready");
+          const readyRadio = document.createElement("radio");
+          const readyLabel = document.createTextNode("Ready");
+          readyLabel.appendChild(readyRadio);
+          payloadEl.replaceChild(readyRadio);
+        }
+        default: {
+          console.warn("Unhandled message type ", selection.value);
+        }
+      }
+    }
+  </script>
+</div>
