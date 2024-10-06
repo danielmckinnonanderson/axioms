@@ -1,9 +1,11 @@
-use std::{collections::HashMap, thread};
+use std::{borrow::BorrowMut, collections::HashMap, fs::File, io::{self, BufRead, Read}, thread};
 
+use messaging::MessageType;
 use rouille::{input::json, router, try_or_400, websocket, Request, RequestBody, Response, ResponseBody};
 
 mod cards;
 mod game;
+mod messaging;
 
 const SERVER_HOSTNAME: &'static str = "localhost";
 const SERVER_PORT: u16 = 8080;
@@ -17,25 +19,22 @@ fn main() {
     let server_addr = format!("{}:{}", SERVER_HOSTNAME, SERVER_PORT);
     println!("Listening on {server_addr}");
 
-    rouille::start_server(server_addr, move |request | {
+    let client_html_f = File::open("src/client.html").expect("Couldn't find client HTML");
+    let client_html: String = {
+        let mut buf = String::new();
+        
+        io::BufReader::new(client_html_f)
+            .read_to_string(buf.borrow_mut())
+            .expect("Couldn't read contents from client.html");
+
+        buf
+    };
+
+
+    rouille::start_server(server_addr, move |request| {
         router!(request,
             (GET) (/) => {
-                Response::html("<script type=\"text/javascript\">
-                    var socket = new WebSocket(\"ws://localhost:8080/ws\", \"echo\");
-                    function send(data) {{
-                        socket.send(data);
-                    }}
-                    socket.onmessage = function(event) {{
-                        document.getElementById('result').innerHTML += event.data + '<br />';
-                    }}
-                    </script>
-                    <p>This example sends back everything you send to the server.</p>
-                    <p><form onsubmit=\"send(document.getElementById('msg').value); return false;\">
-                    <input type=\"text\" id=\"msg\" />
-                    <button type=\"submit\">Send</button>
-                    </form></p>
-                    <p>Received: </p>
-                    <p id=\"result\"></p>")
+                Response::html(client_html.as_str())
             },
            (GET) (/ws) => {
                 // This is the websockets route.
@@ -76,8 +75,14 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
                 println!("received {:?} from a websocket", txt);
                 websocket.send_text(&txt).unwrap();
             }
-            websocket::Message::Binary(_) => {
-                println!("received binary from a websocket");
+            websocket::Message::Binary(data) => {
+                let maybe_msg: Result<MessageType, ()> = data.try_into();
+                if let Err(_) = maybe_msg {
+                    return;
+                }
+
+                let msg = maybe_msg.unwrap();
+                println!("{:?}", msg);
             }
         }
     }
