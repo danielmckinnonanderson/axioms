@@ -1,15 +1,19 @@
-use std::{borrow::BorrowMut, collections::HashMap, fs::File, io::{self, Read}, thread};
+use std::{
+    borrow::BorrowMut,
+    collections::HashMap,
+    fs::File,
+    io::{self, Read},
+    thread,
+};
 
 use messaging::MessageType;
 use rouille::{router, try_or_400, websocket, Response};
 
-mod cards;
 mod game;
 mod messaging;
 
 const SERVER_HOSTNAME: &'static str = "localhost";
 const SERVER_PORT: u16 = 8080;
-
 
 fn main() {
     // A room is an instance of a game -- Players can join and leave rooms.
@@ -22,14 +26,13 @@ fn main() {
     let client_html_f = File::open("src/bin-form.html").expect("Couldn't find client HTML");
     let client_html: String = {
         let mut buf = String::new();
-        
+
         io::BufReader::new(client_html_f)
             .read_to_string(buf.borrow_mut())
             .expect("Couldn't read contents from client.html");
 
         buf
     };
-
 
     rouille::start_server(server_addr, move |request| {
         router!(request,

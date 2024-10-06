@@ -1,8 +1,3 @@
-use std::collections::{HashMap};
-
-use lazy_static::lazy_static;
-
-
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum GameAxiom {
     IsEven = 0x00,
@@ -26,7 +21,7 @@ impl TryFrom<u8> for GameAxiom {
             0x04 => Ok(GameAxiom::IsLessThan50),
             0x05 => Ok(GameAxiom::IsMoreThan50),
             0x06 => Ok(GameAxiom::IsSquare),
-            _    => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -34,26 +29,25 @@ impl TryFrom<u8> for GameAxiom {
 impl From<GameAxiom> for u8 {
     fn from(value: GameAxiom) -> u8 {
         match value {
-            GameAxiom::IsEven       => 0x00,
-            GameAxiom::IsOdd        => 0x01,
-            GameAxiom::IsPrime      => 0x02,
-            GameAxiom::IsDivis10    => 0x03,
+            GameAxiom::IsEven => 0x00,
+            GameAxiom::IsOdd => 0x01,
+            GameAxiom::IsPrime => 0x02,
+            GameAxiom::IsDivis10 => 0x03,
             GameAxiom::IsLessThan50 => 0x04,
             GameAxiom::IsMoreThan50 => 0x05,
-            GameAxiom::IsSquare     => 0x06,
+            GameAxiom::IsSquare => 0x06,
         }
     }
 }
 
 // Test if the axiom is true for the given number
-pub type AxiomPredicate = fn (n: u8) -> bool;
-
+pub type AxiomPredicate = fn(n: u8) -> bool;
 
 impl From<GameAxiom> for AxiomPredicate {
     fn from(value: GameAxiom) -> AxiomPredicate {
         match value {
-            GameAxiom::IsEven =>  |n: u8| n % 2 == 0,
-            GameAxiom::IsOdd  =>  |n: u8| (n + 1) % 2 == 0,
+            GameAxiom::IsEven => |n: u8| n % 2 == 0,
+            GameAxiom::IsOdd => |n: u8| (n + 1) % 2 == 0,
             GameAxiom::IsPrime => |n: u8| {
                 if n < 2 {
                     false
@@ -73,15 +67,14 @@ impl From<GameAxiom> for AxiomPredicate {
             GameAxiom::IsSquare => |n: u8| {
                 let root = (n as f32).sqrt() as u8;
                 root * root == n
-            }
+            },
         }
     }
 }
 
-
 // Upper and lower are both inclusive.
 // example: lower_bound = 0, upper_bound = 100
-fn probability(lower_bound: u8, upper_bound: u8, axiom: GameAxiom) -> f32 {
+pub fn calc_probability(lower_bound: u8, upper_bound: u8, axiom: GameAxiom) -> f32 {
     let test = AxiomPredicate::from(axiom.clone());
 
     let mut hits = 0;
@@ -112,25 +105,24 @@ mod tests {
     #[test]
     fn test_probabilities() {
         let is_odd = GameAxiom::IsOdd;
-        assert_eq!(probability(0, 100, is_odd), (50_f32 / 101_f32 ));
+        assert_eq!(calc_probability(0, 100, is_odd), (50_f32 / 101_f32));
 
         let is_even = GameAxiom::IsEven;
-        assert_eq!(probability(0, 100, is_even), (50_f32 / 101_f32 ));
+        assert_eq!(calc_probability(0, 100, is_even), (50_f32 / 101_f32));
 
         let is_prime = GameAxiom::IsPrime;
-        assert_eq!(probability(0, 100, is_prime), (25_f32 / 101_f32 ));
+        assert_eq!(calc_probability(0, 100, is_prime), (25_f32 / 101_f32));
 
         let is_divis_10 = GameAxiom::IsDivis10;
-        assert_eq!(probability(0, 100, is_divis_10), (10_f32 / 101_f32));
+        assert_eq!(calc_probability(0, 100, is_divis_10), (10_f32 / 101_f32));
 
         let is_gr_50 = GameAxiom::IsMoreThan50;
-        assert_eq!(probability(0, 100, is_gr_50), (49_f32 / 101_f32));
+        assert_eq!(calc_probability(0, 100, is_gr_50), (49_f32 / 101_f32));
 
         let is_lt_50 = GameAxiom::IsLessThan50;
-        assert_eq!(probability(0, 100, is_lt_50), (50_f32 / 101_f32));
+        assert_eq!(calc_probability(0, 100, is_lt_50), (50_f32 / 101_f32));
 
         let is_sq = GameAxiom::IsSquare;
-        assert_eq!(probability(0, 100, is_sq), (10_f32 / 101_f32));
+        assert_eq!(calc_probability(0, 100, is_sq), (10_f32 / 101_f32));
     }
 }
-
