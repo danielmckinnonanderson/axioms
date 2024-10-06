@@ -1,0 +1,29 @@
+1. Create a room.
+  - Empty request
+  - Response contains the ID of the room that it created
+
+2. Join a room.
+  - Request includes the ID of the room to join
+  - Response will be a redirect to the websocket route for this room, or an error if the room does not exist, is already full, or otherwise can't be joined.
+
+Once within a room, the message protocol will change from application/json -> custom binary format.
+
+3. Ready up within a room.
+  - Client sends a ready / unready message to indicate their ready status.
+
+4. Once all players are ready, the server can proceed to the initial game state.
+  - Server sends a message indicating that the game has transitioned to initial state
+
+5. In initial game state, the server will choose a random number between 1 and 100.
+  - Server sends a message indicating that it has chosen its number
+
+6. With its magic number chosen, the server will move to the "PlayerChoosing" state.
+  - Server sends a message indicating that player {Player ID} is making their choice.
+  - Game waits while the player makes their choice.
+
+7. Player A takes their turn. They will be presented with a series of categories / axioms about the number, and they will select the one that they want. Axioms are phrases like "the number is even", "the number ends with 0", "the number is prime", etc. These axioms are known in advance and are hard-coded, to make binary ser/de easier.
+  - Player sends a message indicating the axiom they chose.
+  - Server responds with the axioms IDs that are already claimed, including the one that was just taken by the incoming request.
+
+8. Server moves to "TurnCompleted" state -- In this state, if all players have taken their turn, it advances to "EvaluateAxioms" state. If there are still players who have not taken their turn, move to the "PlayerChoosing" state again for the next player.
+  - Server sends message indicating either the ID of the next player who will take their turn, or sends a message indicating that it is moving to the evaluation state.

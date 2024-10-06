@@ -1,0 +1,8 @@
+[package]
+name = "card-game-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lazy_static = "1.5.0"
+rouille = "3.6.2"
