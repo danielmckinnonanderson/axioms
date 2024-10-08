@@ -4,10 +4,10 @@
 
     <form
       id="message-form"
-      onsubmit="onSubmit()"
+      onsubmit="onSubmit(event)"
     >
       <select
-        name="message-type-select"
+        name="msgType"
         id="message-type-select"
         onchange="onMsgTypeChange(event)"
       >
@@ -20,6 +20,14 @@
       </select>
 
       <div id="message-payload">
+        <label name="ready-status">
+          Ready?
+          <input
+            type="checkbox"
+            id="message-payload-ready-status"
+            name="isReady"
+          />
+        </label>
       </div>
 
       <button
@@ -30,38 +38,41 @@
     </form>
   </section>
 
-  <code id="server-response">
+  <code id="server-responses">
+  </table>
 
-  </code>
 
   <script>
-    const socket = new WebSocket("ws://localhost:8080/ws");
+    // TODO update the subprotocol name
+    const socket = new WebSocket("ws://localhost:8080/ws", "axioms");
     socket.binaryType = "arraybuffer";
 
-    socket.onmessage = function(event) {{
-      // FIXME
-      document.getElementById("server-response").innerHTML = event.data + "<br />";
-    }}
+    const serverResponseEl = document.getElementById("server-responses");
+    const ctr = 0;
 
-    function onSubmit() {
-      const form = document.getElementById("message-form");
-      const values = Array.from(new FormData(form).entries());
-      const data = {
-        msgType: values[0][1],
-        payload: undefined
-      };
+    socket.onmessage = function (event) {
+      ctr++;
+      console.info(`[${new Date()}]:`, event.data);
+      serverResponseEl.innerHTML += event.data + "<br />";
+    }
 
-      const msg = serialize(data.msgType, data.payload);
+    function onSubmit(event) {
+      event.preventDefault();
+      const form    = document.getElementById("message-form");
+      const values  = Array.from(new FormData(form).entries());
+      const msgForm = formTuplesToObj(values);
+      const msg     = serialize(msgForm);
+      console.info("Sending ", msg);
       socket.send(msg);
     }
 
-    function serialize(msgType, payload) {
+    function serialize(msgForm) {
+      const msgType = msgForm["msgType"];
+
       switch (msgType) {
         case "client_ready": {
-          const ready = (!!payload) ? 0x01 : 0x00;
-          const arr = new Uint8Array([0x00, ready]);
-          console.info(arr);
-          return arr;
+          const ready = (!!msgForm["isReady"]) + 0;
+          return new Uint8Array([0x00, ready]);
         }
         default: {
           console.warn("Unhandled message type for serialization", msgType);
@@ -74,18 +85,73 @@
       const selection = opts.find(opt => opt.selected);
       const payloadEl = document.getElementById("message-payload");
 
+      // First, clear the payload element's child nodes
+      Array.from(payloadEl.children).map(child => payloadEl.removeChild(child));
+
+      // Then, add the elements corresponding to the message type
       switch(selection.value) {
         case "client_ready": {
           console.info("Switched to client ready");
-          const readyRadio = document.createElement("radio");
-          const readyLabel = document.createTextNode("Ready");
-          readyLabel.appendChild(readyRadio);
-          payloadEl.replaceChild(readyRadio);
+
+          const readyLabel   = document.createElement("label");
+          readyLabel.setAttribute("name", "readyStatus");
+          const labelContent = document.createTextNode("Ready?");
+          readyLabel.appendChild(labelContent);
+
+          const readyInput = document.createElement("input");
+          readyInput.setAttribute("type", "checkbox");
+          readyInput.setAttribute("id", "message-payload-ready-status");
+          readyInput.setAttribute("name", "isReady");
+          readyLabel.appendChild(readyInput);
+
+          payloadEl.appendChild(readyLabel);
         }
         default: {
           console.warn("Unhandled message type ", selection.value);
         }
       }
+    }
+
+    function formTuplesToObj(formData) {
+      const msgForm = formData.reduce((acc, tuple) => {
+        acc[tuple[0]] = tuple[1]
+        return acc;
+      }, {});
+
+      return msgForm;
+    }
+
+    function extractPayload(msgForm) {
+      if (!("msgType" in msgForm)) {
+        console.error("Couldn't find `msgType` in form");
+        return;
+      }
+
+      switch (msgForm["msgType"]) {
+        case "client_ready": {
+          return "isReady" in msgForm;
+        }
+        default: {
+          console.warn("Unhandled msgType in extractPayload ", msgForm["msgType"]);
+        }
+      }
+    }
+
+    function createRequestResponseTableRow(reqRespTableEl) {
+      const newRowIdx = reqRespTableEl.children.length ?? 0;
+
+      const tr = document.createElement("tr");
+      if (tr === null) {
+        console.error("Couldn't create table row");
+        return;
+      }
+
+      const reqTd  = document.createElement("td");
+      const respTd = document.createElement("td");
+
+      tr.appendChild(reqTd);
+      tr.appendChild(respTd);
+      reqRespTableEl.appendChild(tr);
     }
   </script>
 </div>
