@@ -50,14 +50,31 @@
     const serverResponseEl = document.getElementById("server-responses");
 
     socket.onmessage = function (event) {
+      const getDateStr = function () {
+        const d = new Date();
+        const month = d.getMonth();
+        const day = d.getDate();
+        const year = d.getFullYear();
+        const hour = d.getHours();
+        const min = d.getMinutes();
+        const sec = d.getSeconds();
+        return `[${month}/${day}/${year} ${hour}:${min}:${sec}]: `;
+      }
+
+      const dateStr = getDateStr();
+
       if (!("byteLength" in event.data)) {
-        console.info(`[${new Date()}]:`, event.data);
+        console.info(`[${dateStr}]:`, event.data);
         console.warn("Event data was not an array buffer");
-        serverResponseEl.innerHTML += event.data + "<br />";
+        serverResponseEl.innerHTML += dateStr + event.data + "<br />";
       }
 
       const response = new Uint8Array(event.data);
-      console.info(`[${new Date()}]: `, response[0], response[1]);
+      const respStr = response.reduce((acc, byte_) => {
+        return acc + " " + byte_;
+      }, "");
+      serverResponseEl.innerHTML += dateStr + respStr + "<br/>";
+      console.info(dateStr, response);
     }
 
     function onSubmit(event) {
