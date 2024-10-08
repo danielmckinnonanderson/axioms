@@ -46,29 +46,37 @@ impl From<MessageType> for Vec<u8> {
     }
 }
 
+
+fn vec_to_axiom_ids(vec: Vec<u8>) -> Result<[u8; 6], ()> {
+    if vec.len() != 6 {
+        return Err(());
+    }
+
+    vec.try_into().or(Err(()))
+}
+
+
 impl TryFrom<Vec<u8>> for MessageType {
-    type Error = ();
+    type Error = DeserializationError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        fn vec_to_axiom_ids(vec: Vec<u8>) -> Result<[u8; 6], ()> {
-            if vec.len() != 6 {
-                return Err(());
-            }
-
-            vec.try_into().or(Err(()))
-        }
 
         let mut iter = value.into_iter();
 
         if let Some(byte) = iter.next() {
             return match byte {
                 0x00 => {
-                    let payload = iter.next().ok_or(())?;
-                    let payload = match payload {
+                    let maybe_payload = iter.next();
+                    if maybe_payload.is_none() {
+                        return Err(DeserializationError::IllegalStructure);
+                    }
+
+                    let payload = match maybe_payload.unwrap() {
                         0 => false,
                         1 => true,
-                        _ => return Err(()),
+                        _ => return Err(DeserializationError::IllegalStructure),
                     };
+
                     Ok(MessageType::ClientReadyStatus(ClientReadyPayload {
                         ready: payload,
                     }))
@@ -83,27 +91,61 @@ impl TryFrom<Vec<u8>> for MessageType {
                         avail.push(byte);
                     }
 
-                    let slice: [u8; 6] = vec_to_axiom_ids(avail)?;
-
-                    Ok(MessageType::RoundInit(RoundInitPayload {
-                        available_axioms: slice,
-                    }))
+                    let maybe_slice = vec_to_axiom_ids(avail);
+                    match maybe_slice {
+                        Ok(slice) => Ok(MessageType::RoundInit(RoundInitPayload {
+                            available_axioms: slice,
+                        })),
+                        Err(_) => Err(DeserializationError::IllegalStructure)
+                    }
                 }
                 _ => {
-                    unimplemented!(
-                        "TODO - Finish implementing deserialization for other msg types"
-                    );
+                    Err(DeserializationError::InvalidMessageType)
                 }
             };
         } else {
-            Err(())
+            Err(DeserializationError::IllegalStructure)
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DeserializationError {
+    MessageTooLarge,
+    IllegalStructure,
+    InvalidMessageType,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum MessagingError {
+    DeserializationError(DeserializationError),
+    SerializationError(String),
+}
+
+// Attempt to parse a binary message into a valid
+// application data structure
+pub fn try_parse_message(binary: Vec<u8>) -> Result<MessageType, DeserializationError> {
+    if binary.len() > 10 {
+        return Err(DeserializationError::MessageTooLarge);
+    }
+
+    (binary).try_into()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_try_parse_message() {
+        let msg_valid = vec![0x01, 0x00];
+
+        assert_eq!(
+            try_parse_message(msg_valid),
+            Ok(MessageType::ClientReadyStatus(ClientReadyPayload {
+                    ready: false,
+                })));
+    }
 
     #[test]
     fn test_msg_bin_serialization() {

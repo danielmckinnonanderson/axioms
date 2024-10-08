@@ -48,12 +48,16 @@
     socket.binaryType = "arraybuffer";
 
     const serverResponseEl = document.getElementById("server-responses");
-    const ctr = 0;
 
     socket.onmessage = function (event) {
-      ctr++;
-      console.info(`[${new Date()}]:`, event.data);
-      serverResponseEl.innerHTML += event.data + "<br />";
+      if (!("byteLength" in event.data)) {
+        console.info(`[${new Date()}]:`, event.data);
+        console.warn("Event data was not an array buffer");
+        serverResponseEl.innerHTML += event.data + "<br />";
+      }
+
+      const response = new Uint8Array(event.data);
+      console.info(`[${new Date()}]: `, response[0], response[1]);
     }
 
     function onSubmit(event) {

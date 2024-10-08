@@ -9,6 +9,8 @@ use std::{
 use messaging::MessageType;
 use rouille::{router, try_or_400, websocket, Response};
 
+use crate::messaging::{try_parse_message, DeserializationError};
+
 mod game;
 mod messaging;
 
@@ -26,7 +28,9 @@ fn main() {
     rouille::start_server(server_addr, move |request| {
         router!(request,
             (GET) (/) => {
-                let client_html_f = File::open("src/bin-form.html").expect("Couldn't find client HTML");
+                let client_html_f = File::open("src/bin-form.html")
+                    .expect("Couldn't find client HTML");
+
                 let client_html: String = {
                     let mut buf = String::new();
 
@@ -65,14 +69,24 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
                 websocket.send_text(&txt).unwrap();
             }
             websocket::Message::Binary(data) => {
-                let maybe_msg: Result<MessageType, ()> = data.try_into();
-                if let Err(_) = maybe_msg {
+                let maybe_msg: Result<MessageType, DeserializationError> = try_parse_message(data);
+                if maybe_msg.is_err () {
+                    eprintln!("Could not deserialize message: {:?}", maybe_msg);
                     return;
                 }
 
                 let msg = maybe_msg.unwrap();
-                println!("{:?}", msg);
+                println!("Received {:?}", msg);
+
+                // TODO - Formalize a "message receipt confirmation" response structure
+                match websocket.send_binary(&vec![0xFE, 0x01]) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        eprintln!("Error sending message: {:?}", e);
+                    }
+                }
             }
         }
     }
 }
+

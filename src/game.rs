@@ -1,6 +1,19 @@
+
+type PlayerId = u16;
+
+enum GameState {
+    WaitingRoom(WaitingRoomState),
+    GameStart,
+}
+
+pub struct WaitingRoomState {
+    in_room: Vec<PlayerId>,
+    ready: Vec<PlayerId>,
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum GameAxiom {
-    IsEven = 0x00,
+    IsEven,
     IsOdd,
     IsPrime,
     IsDivis10,
@@ -26,16 +39,17 @@ impl TryFrom<u8> for GameAxiom {
     }
 }
 
+
 impl From<GameAxiom> for u8 {
     fn from(value: GameAxiom) -> u8 {
         match value {
-            GameAxiom::IsEven => 0x00,
-            GameAxiom::IsOdd => 0x01,
-            GameAxiom::IsPrime => 0x02,
-            GameAxiom::IsDivis10 => 0x03,
+            GameAxiom::IsEven       => 0x00,
+            GameAxiom::IsOdd        => 0x01,
+            GameAxiom::IsPrime      => 0x02,
+            GameAxiom::IsDivis10    => 0x03,
             GameAxiom::IsLessThan50 => 0x04,
             GameAxiom::IsMoreThan50 => 0x05,
-            GameAxiom::IsSquare => 0x06,
+            GameAxiom::IsSquare     => 0x06,
         }
     }
 }
@@ -87,15 +101,6 @@ pub fn calc_probability(lower_bound: u8, upper_bound: u8, axiom: GameAxiom) -> f
     }
 
     return hits as f32 / quantity as f32;
-}
-
-pub struct GameState {
-    pub magic_number: u8,
-}
-
-pub enum RoomState {
-    Pregame,
-    Initial,
 }
 
 #[cfg(test)]
