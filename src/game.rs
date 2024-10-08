@@ -1,4 +1,3 @@
-
 type PlayerId = u16;
 
 enum GameState {
@@ -39,17 +38,16 @@ impl TryFrom<u8> for GameAxiom {
     }
 }
 
-
 impl From<GameAxiom> for u8 {
     fn from(value: GameAxiom) -> u8 {
         match value {
-            GameAxiom::IsEven       => 0x00,
-            GameAxiom::IsOdd        => 0x01,
-            GameAxiom::IsPrime      => 0x02,
-            GameAxiom::IsDivis10    => 0x03,
+            GameAxiom::IsEven => 0x00,
+            GameAxiom::IsOdd => 0x01,
+            GameAxiom::IsPrime => 0x02,
+            GameAxiom::IsDivis10 => 0x03,
             GameAxiom::IsLessThan50 => 0x04,
             GameAxiom::IsMoreThan50 => 0x05,
-            GameAxiom::IsSquare     => 0x06,
+            GameAxiom::IsSquare => 0x06,
         }
     }
 }
@@ -89,7 +87,7 @@ impl From<GameAxiom> for AxiomPredicate {
 // Upper and lower are both inclusive.
 // example: lower_bound = 0, upper_bound = 100
 pub fn calc_probability(lower_bound: u8, upper_bound: u8, axiom: GameAxiom) -> f32 {
-    let test = AxiomPredicate::from(axiom.clone());
+    let test = AxiomPredicate::from(axiom);
 
     let mut hits = 0;
 
@@ -100,7 +98,7 @@ pub fn calc_probability(lower_bound: u8, upper_bound: u8, axiom: GameAxiom) -> f
         }
     }
 
-    return hits as f32 / quantity as f32;
+    hits as f32 / quantity as f32
 }
 
 #[cfg(test)]

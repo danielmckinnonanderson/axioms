@@ -70,7 +70,7 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
             }
             websocket::Message::Binary(data) => {
                 let maybe_msg: Result<MessageType, DeserializationError> = try_parse_message(data);
-                if maybe_msg.is_err () {
+                if maybe_msg.is_err() {
                     eprintln!("Could not deserialize message: {:?}", maybe_msg);
                     return;
                 }
@@ -79,8 +79,8 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
                 println!("Received {:?}", msg);
 
                 // TODO - Formalize a "message receipt confirmation" response structure
-                match websocket.send_binary(&vec![0xFE, 0x01]) {
-                    Ok(_) => {},
+                match websocket.send_binary(&[0xFE, 0x01]) {
+                    Ok(_) => {}
                     Err(e) => {
                         eprintln!("Error sending message: {:?}", e);
                     }
@@ -89,4 +89,3 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
         }
     }
 }
-
