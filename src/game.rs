@@ -1,13 +1,37 @@
+use crate::messaging::MessageType;
+
 type PlayerId = u16;
 
-enum GameState {
+pub enum GameState {
     WaitingRoom(WaitingRoomState),
     GameStart,
 }
 
 pub struct WaitingRoomState {
-    in_room: Vec<PlayerId>,
-    ready: Vec<PlayerId>,
+    ready: bool
+}
+
+
+impl GameState {
+    pub fn transition(&mut self, input: MessageType) {
+        match self {
+            Self::WaitingRoom(_inner) => {
+                match input {
+                    MessageType::ClientReadyStatus(_rs) => {
+                        println!("Received ready");
+                    }
+                    _ => return
+                }
+            }
+            _ => return
+        }
+    }
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameState::WaitingRoom(WaitingRoomState { ready: false })
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
